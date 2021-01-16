@@ -16,7 +16,7 @@ namespace blog_CompilingWithRoslyn
     {
         private static void Main(string[] args)
         {
-            string code = "using System; using System.Linq; namespace InMemoryApp {class Program{private static void Main(string[] args){ foreach (string arg in args) {Console.WriteLine(arg);} args.Where(x => !string.IsNullOrEmpty(x)); } } }";
+            string code = "using System; using System.Linq; namespace InMemoryApp {class Program{private static void Main(string[] args){ foreach (string arg in args) {Console.WriteLine(arg);} args.Where(x => !string.IsNullOrEmpty(x)); dynamic number = 1; Console.WriteLine(number);} } }";
 
             var syntaxTree = CSharpSyntaxTree.ParseText(code, new CSharpParseOptions(LanguageVersion.CSharp8));
             string basePath = Path.GetDirectoryName(typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly.Location);
@@ -24,19 +24,22 @@ namespace blog_CompilingWithRoslyn
             var root = syntaxTree.GetRoot() as CompilationUnitSyntax;
             var references = root.Usings;
 
-            var referencesPaths = new List<string> {
+            var referencePaths = new List<string> {
                     typeof(object).GetTypeInfo().Assembly.Location,
                     typeof(Console).GetTypeInfo().Assembly.Location,
                     Path.Combine(basePath, "System.Runtime.dll"),
                     Path.Combine(basePath, "System.Runtime.Extensions.dll"),
-                    Path.Combine(basePath, "mscorlib.dll")
+                    Path.Combine(basePath, "mscorlib.dll"),
+                    Path.Combine(basePath, "Microsoft.CSharp.dll"),
+                    Path.Combine(basePath, "System.Linq.Expressions.dll"),
+                    Path.Combine(basePath, "netstandard.dll")
                 };
 
-            referencesPaths.AddRange(references.Select(x => Path.Combine(basePath, $"{x.Name}.dll")));
+            referencePaths.AddRange(references.Select(x => Path.Combine(basePath, $"{x.Name}.dll")));
 
             var executableReferences = new List<PortableExecutableReference>();
 
-            foreach (var reference in referencesPaths)
+            foreach (var reference in referencePaths)
             {
                 if (File.Exists(reference))
                 {
