@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Emit;
 using System;
 using System.Collections.Generic;
@@ -15,10 +16,13 @@ namespace blog_CompilingWithRoslyn
     {
         private static void Main(string[] args)
         {
-            string code = "using System; namespace InMemoryApp {class Program{private static void Main(string[] args){ foreach (string arg in args) {Console.WriteLine(arg);} } } }";
+            string code = "using System; using System.Linq; namespace InMemoryApp {class Program{private static void Main(string[] args){ foreach (string arg in args) {Console.WriteLine(arg);} args.Where(x => !string.IsNullOrEmpty(x)); } } }";
 
             var syntaxTree = CSharpSyntaxTree.ParseText(code, new CSharpParseOptions(LanguageVersion.CSharp8));
             string basePath = Path.GetDirectoryName(typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly.Location);
+
+            var root = syntaxTree.GetRoot() as CompilationUnitSyntax;
+            var references = root.Usings;
 
             var referencesPaths = new List<string> {
                     typeof(object).GetTypeInfo().Assembly.Location,
@@ -27,6 +31,8 @@ namespace blog_CompilingWithRoslyn
                     Path.Combine(basePath, "System.Runtime.Extensions.dll"),
                     Path.Combine(basePath, "mscorlib.dll")
                 };
+
+            referencesPaths.AddRange(references.Select(x => Path.Combine(basePath, $"{x.Name}.dll")));
 
             var executableReferences = new List<PortableExecutableReference>();
 
